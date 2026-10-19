@@ -1,0 +1,10 @@
+
+# Environment credentials
+/atlas-credentials (2).env
+
+# HTML layout file
+/contacts_page_layout_with_sidebar.html
+
+# Database schema and project information
+/db_scehma.txt
+/info.txt
