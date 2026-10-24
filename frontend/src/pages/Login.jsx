@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import logo from "../assets/contacthub-lockup-dark.svg";
+import api from "../services/api";
 import "./Login.css";
 
 function Login() {
@@ -26,64 +27,52 @@ function Login() {
     }));
   }
 
-  async function handleSubmit(e) {
-    e.preventDefault();
 
-    setError("");
+async function handleSubmit(e) {
+  e.preventDefault();
 
-    if (!formData.email.trim() || !formData.password) {
-      setError("Please enter your email and password.");
-      return;
-    }
+  setError("");
 
-    try {
-      setLoading(true);
-
-      const response = await fetch(
-        "http://localhost:5000/api/auth/login",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            email: formData.email.trim(),
-            password: formData.password,
-          }),
-        }
-      );
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || "Login failed.");
-      }
-
-      if (!data.token) {
-        throw new Error("Login succeeded, but no token was received.");
-      }
-
-      // Save the JWT token for future authenticated API requests.
-      sessionStorage.setItem("token", data.token);
-
-      // Save public user details if the backend returned them.
-      if (data.user) {
-        sessionStorage.setItem("user", JSON.stringify(data.user));
-      }
-
-      // For now, show a success message on the login page.
-      setError("");
-      navigate("/dashboard", { replace: true });
-    } catch (err) {
-      setError(
-        err.message === "Failed to fetch"
-          ? "Cannot connect to the server. Please check your backend."
-          : err.message
-      );
-    } finally {
-      setLoading(false);
-    }
+  if (!formData.email.trim() || !formData.password) {
+    setError("Please enter your email and password.");
+    return;
   }
+
+  try {
+    setLoading(true);
+
+    const response = await api.post("/auth/login", {
+      email: formData.email.trim(),
+      password: formData.password,
+    });
+
+    const data = response.data;
+
+    if (!data.token) {
+      throw new Error("Login succeeded, but no token was received.");
+    }
+
+    // Save the token for authenticated API requests.
+    sessionStorage.setItem("token", data.token);
+
+    if (data.user) {
+      sessionStorage.setItem("user", JSON.stringify(data.user));
+    }
+
+    navigate("/dashboard", { replace: true });
+  } catch (err) {
+    const message =
+      err.response?.data?.message ||
+      (err.code === "ERR_NETWORK"
+        ? "Cannot connect to the server. Please check your backend."
+        : err.message || "Login failed.");
+
+    setError(message);
+  } finally {
+    setLoading(false);
+  }
+}
+
 
   return (
     <div className="login-page">
